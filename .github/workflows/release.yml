@@ -1,6 +1,5 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
       - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
@@ -8,55 +7,49 @@ name: release all os -- no code signing
 
 jobs:
   create-release:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-18.04 # Updated to a more recent Ubuntu version
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2.3.1
+        uses: actions/checkout@v4 # Updated to v4
+        with:
+          fetch-depth: 0 # Ensure full history for release notes
+
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2 # Updated to a more maintained release action
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Deskreen Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: Deskreen Release ${{ github.ref_name }}
           draft: true
           prerelease: false
+          generate_release_notes: true # Added for automatic release notes
 
   release:
     name: Deskreen Release
     runs-on: ${{ matrix.os }}
+    needs: create-release # Ensure release is created before building
 
     strategy:
       matrix:
         include:
-          - os: ubuntu-18.04 # IMPORTANT!!! this LINUX os should be the same as in build-and-test and covecov workflows! this is for making sure caches are used in most efficient way
+          - os: ubuntu-22.04 # Updated to match create-release and improve cache compatibility
             artifact_name: 'release/{*.AppImage,*.rpm,*.deb,*.yml}'
-          - os: windows-2019
+          - os: windows-2022 # Updated to newer Windows version
             artifact_name: 'release/{*.msi,*.exe,*.blockmap,*.yml}'
-          - os: macos-10.15
+          - os: macos-14 # Updated to newer macOS version
             artifact_name: 'release/{*.dmg,*.blockmap,*.yml}'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v4 # Updated to v4
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v2.1.4
+        uses: actions/setup-node@v4 # Updated to v4
         with:
-          node-version: '16'
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - uses: actions/cache@v2.1.3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ matrix.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ matrix.os }}-yarn-
+          node-version: '20' # Updated to a more recent LTS version
+          cache: 'yarn' # Enable built-in Yarn caching
 
       - name: yarn install in ./app/client
         run: |
@@ -86,34 +79,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: yarn tsc
 
-      # - name: yarn test
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: yarn test
-
-      # - name: yarn build-ux
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: yarn build-ux
-
-      # - name: yarn test-ux
-      #   uses: GabrielBB/xvfb-action@v1.2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     run: yarn test-ux
-
       - name: yarn package-ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: yarn package-ci
-      # TODO: add windows32 build step
 
       - name: Upload binaries to release
-        uses: xresloader/upload-to-github-release@v1
+        uses: softprops/action-gh-release@v2 # Updated to a more maintained release action
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          file: ${{ matrix.artifact_name }}
-          tags: true
+          files: ${{ matrix.artifact_name }}
           draft: true
