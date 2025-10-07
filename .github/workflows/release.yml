@@ -7,7 +7,7 @@ name: release all os -- no code signing
 
 jobs:
   create-release:
-    runs-on: ubuntu-18.04 # Updated to a more recent Ubuntu version
+    runs-on: ubuntu-22.04 # Updated to a more recent Ubuntu version
     steps:
       - name: Checkout code
         uses: actions/checkout@v4 # Updated to v4
