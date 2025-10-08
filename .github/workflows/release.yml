@@ -35,11 +35,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04 # Updated to match create-release and improve cache compatibility
-            artifact_name: 'release/{*.AppImage,*.rpm,*.deb,*.yml}'
+            artifact_name: 'release/*.AppImage,release/*.rpm,release/*.deb,release/*.yml'
           - os: windows-2022 # Updated to newer Windows version
-            artifact_name: 'release/{*.msi,*.exe,*.blockmap,*.yml}'
+            artifact_name: 'release/*.msi,release/*.exe,release/*.blockmap,release/*.yml'
           - os: macos-14 # Updated to newer macOS version
-            artifact_name: 'release/{*.dmg,*.blockmap,*.yml}'
+            artifact_name: 'release/*.dmg,release/*.blockmap,release/*.yml'
 
     steps:
       - name: Checkout code
