@@ -26,23 +26,17 @@ describe('HTTP Server Dual-Stack Binding', () => {
     const port = 3131;
     const dualStackHost = '::';
     const ipv4Host = '0.0.0.0';
-    let errorHandler: ((err: any) => void) | undefined;
 
     // Setup mock to capture error handler
-    mockOn.mockImplementation((event: string, handler: (err: any) => void) => {
-      if (event === 'error') {
-        errorHandler = handler;
-      }
+    mockOn.mockImplementation(() => {
       return mockServer;
     });
 
     // Mock successful listen
-    mockListen.mockImplementation(
-      (p: number, host: string, callback?: () => void) => {
-        if (callback) callback();
-        return mockServer;
-      }
-    );
+    mockListen.mockImplementation((callback?: () => void) => {
+      if (callback) callback();
+      return mockServer;
+    });
 
     // Simulate the actual implementation pattern
     const listenWithFallback = () => {
@@ -80,18 +74,16 @@ describe('HTTP Server Dual-Stack Binding', () => {
     let listenCallCount = 0;
 
     // Mock listen to fail on first call, succeed on second
-    mockListen.mockImplementation(
-      (p: number, host: string, callback?: () => void) => {
-        listenCallCount += 1;
-        if (listenCallCount === 1 && host === dualStackHost) {
-          // Don't call callback for first attempt
-          // Error will be triggered through error handler
-        } else if (listenCallCount === 2 && host === ipv4Host) {
-          if (callback) callback();
-        }
-        return mockServer;
+    mockListen.mockImplementation((host: string, callback?: () => void) => {
+      listenCallCount += 1;
+      if (listenCallCount === 1 && host === dualStackHost) {
+        // Don't call callback for first attempt
+        // Error will be triggered through error handler
+      } else if (listenCallCount === 2 && host === ipv4Host) {
+        if (callback) callback();
       }
-    );
+      return mockServer;
+    });
 
     // Setup error handler capture
     let errorHandler: ((err: any) => void) | undefined;
